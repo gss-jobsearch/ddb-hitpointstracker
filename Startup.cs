@@ -29,7 +29,9 @@ namespace HitPointsTracker
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CharacterHP", Version = "v1" });
             });
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(options =>
+					options.JsonSerializerOptions.IgnoreNullValues = true);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

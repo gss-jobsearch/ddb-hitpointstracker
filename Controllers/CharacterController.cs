@@ -19,6 +19,8 @@ namespace HitPointsTracker.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> Create([FromBody] FullCharacter character)
         {
             if (!ModelState.IsValid)
@@ -69,19 +71,23 @@ namespace HitPointsTracker.Controllers
             }
             _db.Characters.Add(newCharacter);
             await _db.SaveChangesAsync();
-            return Ok(newCharacter.Id);
+            return Ok(new HitPointsResult(newCharacter));
         }
 
         [HttpGet("{id}/current")]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> GetHitPoints(long id)
         {
             Character? character = await _db.Characters
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (character == null) return NotFound();
-            return Ok(character.CurHitPoints + character.TempHitPoints);
+            return Ok(new HitPointsResult(character));
         }
 
         [HttpPut("{id}/damage")]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> Damage(long id,
             [FromQuery] string type, [FromQuery] int amount)
         {
@@ -93,6 +99,7 @@ namespace HitPointsTracker.Controllers
                 .Include(c => c.Defenses)
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (character == null) return NotFound();
+            var result = new HitPointsResult(character);
             Defense? defense = character.Defenses
                 .FirstOrDefault(d => d.DamageType == type);
 
@@ -117,10 +124,13 @@ namespace HitPointsTracker.Controllers
                 _db.Characters.Update(character);
                 await _db.SaveChangesAsync();
             }
-            return Ok(character.CurHitPoints + character.TempHitPoints);
+            result.Update(character);
+            return Ok(result);
         }
 
         [HttpPut("{id}/heal")]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> Heal(long id,
             [FromQuery] int amount)
         {
@@ -131,6 +141,7 @@ namespace HitPointsTracker.Controllers
             Character? character = await _db.Characters
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (character == null) return NotFound();
+            var result = new HitPointsResult(character);
 
             if (character.CurHitPoints < character.MaxHitPoints)
             {
@@ -142,10 +153,13 @@ namespace HitPointsTracker.Controllers
                 _db.Characters.Update(character);
                 await _db.SaveChangesAsync();
             }
-            return Ok(character.CurHitPoints + character.TempHitPoints);
+            result.Update(character);
+            return Ok(result);
         }
 
         [HttpPut("{id}/temp")]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> AddTemp(long id,
             [FromQuery] int amount)
         {
@@ -156,6 +170,7 @@ namespace HitPointsTracker.Controllers
             Character? character = await _db.Characters
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (character == null) return NotFound();
+            var result = new HitPointsResult(character);
 
             if (amount > character.TempHitPoints)
             {
@@ -163,7 +178,47 @@ namespace HitPointsTracker.Controllers
                 _db.Characters.Update(character);
                 await _db.SaveChangesAsync();
             }
-            return Ok(character.CurHitPoints + character.TempHitPoints);
+            result.Update(character);
+            return Ok(result);
+        }
+
+        public class HitPointsResult
+        {
+            public long Id { get; }
+
+            public string Name { get; }
+
+            public int MaxHitPoints { get; }
+
+            public HitPointsSnapshot? Previous { get; private set; }
+
+            public HitPointsSnapshot Current { get; private set; }
+
+            public void Update(Character character)
+            {
+                Previous = Current;
+                Current = new HitPointsSnapshot(character);
+            }
+
+            public HitPointsResult(Character character)
+            {
+                Id = character.Id;
+                Name = character.Name;
+                MaxHitPoints = character.MaxHitPoints;
+                Current = new HitPointsSnapshot(character);
+            }
+
+            public class HitPointsSnapshot
+            {
+                public int HitPoints { get; }
+                public int TempHitPoints { get; }
+
+                public HitPointsSnapshot(Character character)
+                {
+                    HitPoints = character.CurHitPoints;
+                    TempHitPoints = character.TempHitPoints;
+                }
+            }
         }
     }
 }
