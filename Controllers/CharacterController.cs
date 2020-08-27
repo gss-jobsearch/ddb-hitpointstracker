@@ -11,6 +11,8 @@ namespace HitPointsTracker.Controllers
     [Route("[controller]")]
     public class CharacterController : ControllerBase
     {
+        private const string Immunity = "immunity";
+
         private readonly CharacterContext _db;
 
         public CharacterController(CharacterContext db)
@@ -52,7 +54,7 @@ namespace HitPointsTracker.Controllers
                     if (bestDefenses.TryGetValue(defense.Type!, out var existing))
                     {
                         // immune overrides resistant
-                        if (!existing.IsImmune && (defense.Defense == "immune"))
+                        if (!existing.IsImmune && (defense.Defense == Immunity))
                         {
                             existing.IsImmune = true;
                         }
@@ -62,7 +64,7 @@ namespace HitPointsTracker.Controllers
                         var newDefense = new Defense()
                         {
                             DamageType = defense.Type!,
-                            IsImmune = (defense.Defense == "immune")
+                            IsImmune = (defense.Defense == Immunity)
                         };
                         bestDefenses.Add(defense.Type!, newDefense);
                         newCharacter.Defenses.Add(newDefense);
