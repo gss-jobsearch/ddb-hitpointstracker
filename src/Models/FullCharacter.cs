@@ -8,6 +8,7 @@ namespace HitPointsTracker.Models
         [Required]
         public string? Name { get; set; }
 
+        [Range(1, 20)]
         public int Level { get; set; }
 
         [Required]
@@ -22,15 +23,21 @@ namespace HitPointsTracker.Models
 
         public class CharStats
         {
+            [Range(1, 20)]
             public int Strength { get; set; }
+            [Range(1, 20)]
             public int Dexterity { get; set; }
+            [Range(1, 20)]
             public int Constitution { get; set; }
+            [Range(1, 20)]
             public int Intelligence { get; set; }
+            [Range(1, 20)]
             public int Wisdom { get; set; }
+            [Range(1, 20)]
             public int Charisma { get; set; }
         }
 
-        public class Item
+        public partial class Item
         {
             [Required]
             public string? Name { get; set; }
@@ -46,11 +53,13 @@ namespace HitPointsTracker.Models
             public int Value { get; set; }
         }
 
-        public partial class CharClass
+        public class CharClass
         {
             [Required]
             public string? Name { get; set; }
+            [IntValuesValidation(6, 8, 10, 12)]
             public int HitDiceValue { get; set; }
+            [IntMinimumValidation(1)]
             public int ClassLevel { get; set; }
         }
 

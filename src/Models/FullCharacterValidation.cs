@@ -8,12 +8,19 @@ namespace HitPointsTracker.Models
     {
         IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
         {
-            if (Level <= 0)
+            if (Stats != null)
             {
-                yield return new ValidationResult(
-                    "Character level must be at least one",
-                    new string[] { nameof(Level) }
-                    );
+                foreach (var result in ValidateObj(Stats))
+                {
+                    yield return result;
+                }
+            }
+            if (Items != null)
+            {
+                foreach (var result in ValidateMultiple(Items))
+                {
+                    yield return result;
+                }
             }
             if (Classes is List<CharClass> classes)
             {
@@ -27,35 +34,39 @@ namespace HitPointsTracker.Models
                         new string[] { nameof(Level), nameof(Classes) }
                         );
                 }
+
+                foreach (var result in ValidateMultiple(classes))
+                {
+                    yield return result;
+                }
+            }
+            if (Defenses != null)
+            {
+                foreach (var result in ValidateMultiple(Defenses))
+                {
+                    yield return result;
+                }
             }
         }
 
-        public partial class CharClass : IValidatableObject
+        private static readonly IEnumerable<ValidationResult> Empty =
+            Enumerable.Empty<ValidationResult>();
+
+        private static IEnumerable<ValidationResult> ValidateObj<T>(T obj)
         {
-            IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
-            {
-                if (ClassLevel <= 0)
-                {
-                    yield return new ValidationResult(
-                        "Class level must be at least one",
-                        new string[] { nameof(ClassLevel) }
-                        );
-                }
-                switch (HitDiceValue)
-                {
-                    case 6:
-                    case 8:
-                    case 10:
-                    case 12:
-                        break;
-                    default:
-                        yield return new ValidationResult(
-                            "Invalid hit dice value",
-                            new string[] { nameof(HitDiceValue) }
-                            );
-                        break;
-                }
-            }
+            var results = new List<ValidationResult>();
+            return Validator.TryValidateObject(
+                obj, new ValidationContext(obj), results, true) ?
+                    Empty : results;
+        }
+
+        private static IEnumerable<ValidationResult> ValidateMultiple<T>(
+            IEnumerable<T> obj) => obj.SelectMany(ValidateObj);
+
+        public partial class Item : IValidatableObject
+        {
+            IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext) =>
+                (Modifier == null) ? Empty : ValidateObj(Modifier);
         }
     }
 }
