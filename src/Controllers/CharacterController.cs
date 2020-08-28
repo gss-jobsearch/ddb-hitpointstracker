@@ -22,14 +22,15 @@ namespace HitPointsTracker.Controllers
 
         [HttpPost]
         [ProducesResponseType(400)]
-        [ProducesResponseType(typeof(HitPointsResult), 200)]
+        [ProducesResponseType(typeof(HitPointsResult), 201)]
         public async Task<IActionResult> Create([FromBody] FullCharacter character)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             Character newCharacter = character.ToCharacter();
             _db.Characters.Add(newCharacter);
             await _db.SaveChangesAsync();
-            return Ok(new HitPointsResult(newCharacter));
+            return Created(newCharacter.Id.ToString(),
+                new HitPointsResult(newCharacter));
         }
 
         [HttpGet("{id}/current")]
