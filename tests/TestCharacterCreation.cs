@@ -106,5 +106,57 @@ namespace HitPointsTracker.Tests
             CollectionAssert.AreEqual(new string[0], mismatched,
                 $"damage immunity mismatch");
         }
+
+        [TestMethod]
+        public async Task TMostlyValidCharacter()
+        {
+            var defenses = _fullCharacter.Defenses!;
+            defenses.Add(new FullCharacter.CharDefense()
+            {
+                Type = defenses[0].Type,
+                Defense = defenses[1].Defense
+            });
+            defenses.Add(new FullCharacter.CharDefense()
+            {
+                Type = defenses[1].Type,
+                Defense = defenses[0].Defense
+            });
+            IActionResult response = await _controller.Create(_fullCharacter);
+            var character = await _db.Characters
+                .Include(c => c.Defenses)
+		        .SingleAsync();
+            if (!(response is ObjectResult objectResponse))
+            {
+                Assert.IsTrue(false,
+				    "controller response should be an object result");
+                return;
+            }
+            Assert.AreEqual(201, objectResponse.StatusCode,
+                "should have accepted the character");
+            if (!(objectResponse.Value is HitPointsResult hp))
+            {
+                Assert.IsTrue(false,
+				    "controller should have responded with a hit points result");
+                return;
+            }
+            Assert.AreEqual(_fullCharacter.Defenses!.Count - 2, character.Defenses.Count,
+                "should have the same number of defenses");
+            var mismatched = character.Defenses!
+                .GroupJoin(_fullCharacter.Defenses,
+                    c => c.DamageType,
+                    fc => fc.Type,
+                    (cd, fcd) => (
+                        DamageType: cd.DamageType,
+                        InputIsImmune: (fcd.OrderBy(fc => fc.Defense).First().Defense == Immunity),
+                        RecordIsImmune: cd.IsImmune
+                        )
+                )
+                .Where(join => join.InputIsImmune != join.RecordIsImmune)
+                .Select(join => join.DamageType)
+                .ToList();
+            CollectionAssert.AreEqual(new string[0], mismatched,
+                $"damage immunity mismatch");
+        }
+
     }
 }
