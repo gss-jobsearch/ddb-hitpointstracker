@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using HitPointsTracker.Controllers;
 using HitPointsTracker.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
@@ -161,6 +162,26 @@ namespace HitPointsTracker.Tests
         }
 
         [TestMethod]
+        public async Task TUnderDamage()
+        {
+            IActionResult response = await _controller.Damage(1, DamageNormal, CharTempHP / 2);
+            var hp = await CheckResponse(response,
+                CharHP,
+                "unmodified",
+                CharTempHP / 2,
+                "reduced"
+                );
+            Assert.IsNotNull(hp.Previous,
+                "there should be previous values");
+            CheckSnapshot(hp.Previous!,
+                CharHP,
+                "unmodified",
+                CharTempHP,
+                "unmodified"
+                );
+        }
+
+        [TestMethod]
         public async Task THeal()
         {
             await SetHP(CharHP / 2, CharTempHP);
@@ -242,6 +263,60 @@ namespace HitPointsTracker.Tests
                 CharTempHP,
                 "unmodified"
                 );
+        }
+
+        [TestMethod]
+        public async Task TNotFound()
+        {
+            IActionResult response = await _controller.GetHitPoints(2);
+            CheckNotFound(response, "GetHitPoints");
+            response = await _controller.Damage(2, DamageImmune, 100);
+            CheckNotFound(response, "Damage");
+            response = await _controller.Heal(2, CharHP);
+            CheckNotFound(response, "Heal");
+            response = await _controller.AddTemp(2, CharTempHP);
+            CheckNotFound(response, "AddTemp");
+        }
+
+        [TestMethod]
+        public async Task TBadRequest()
+        {
+            IActionResult response = await _controller.Damage(1, DamageImmune, 0);
+            CheckBadRequest(response, "Damage (0)");
+            response = await _controller.Heal(1, 0);
+            CheckBadRequest(response, "Heal (0)");
+            response = await _controller.AddTemp(1, 0);
+            CheckBadRequest(response, "AddTemp (0)");
+            response = await _controller.Damage(1, DamageImmune, -1);
+            CheckBadRequest(response, "Damage (negative)");
+            response = await _controller.Heal(1, -1);
+            CheckBadRequest(response, "Heal (negative)");
+            response = await _controller.AddTemp(1, -1);
+            CheckBadRequest(response, "AddTemp (negative)");
+        }
+
+        private static void CheckNotFound(IActionResult response, string action)
+        {
+            if (!(response is IStatusCodeActionResult statusResponse))
+            {
+                Assert.IsTrue(false,
+				    action + " response should be a status result");
+                throw new InvalidOperationException("unreachable");
+            }
+            Assert.AreEqual(404, statusResponse.StatusCode,
+                action + " should have responded Not Found");
+        }
+
+        private static void CheckBadRequest(IActionResult response, string action)
+        {
+            if (!(response is IStatusCodeActionResult statusResponse))
+            {
+                Assert.IsTrue(false,
+				    action + " response should be a status result");
+                throw new InvalidOperationException("unreachable");
+            }
+            Assert.AreEqual(400, statusResponse.StatusCode,
+                action + " should have responded Bad Request");
         }
 
         private void CheckSnapshot(
