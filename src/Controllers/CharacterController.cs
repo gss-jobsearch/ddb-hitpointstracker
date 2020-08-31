@@ -44,7 +44,7 @@ namespace HitPointsTracker.Controllers
             return Ok(new HitPointsResult(character));
         }
 
-        [HttpPut("{id}/damage")]
+        [HttpPost("{id}/damage")]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> Damage(long id,
@@ -87,7 +87,7 @@ namespace HitPointsTracker.Controllers
             return Ok(result);
         }
 
-        [HttpPut("{id}/heal")]
+        [HttpPost("{id}/heal")]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> Heal(long id,
@@ -116,7 +116,7 @@ namespace HitPointsTracker.Controllers
             return Ok(result);
         }
 
-        [HttpPut("{id}/temp")]
+        [HttpPost("{id}/temp")]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(HitPointsResult), 200)]
         public async Task<IActionResult> AddTemp(long id,
